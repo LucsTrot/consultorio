@@ -2,8 +2,11 @@ import { edad } from '../../lib/calc';
 import { fFecha, fNum } from '../../lib/format';
 import type { Consulta, Paciente } from '../../lib/types';
 import { ANTECEDENTES } from '../../components/forms/PacienteForm';
+import { Icono } from '../../components/Icono';
+import { BotonBorrar } from '../../components/ui';
+import { borrar, borrarPaciente, reactivarPaciente, suspenderPaciente } from '../../lib/borrar';
 
-export function Historia({ p, onEditar }: { p: Paciente; onEditar: () => void }) {
+export function Historia({ p, onEditar, onBorrado }: { p: Paciente; onEditar: () => void; onBorrado: () => void }) {
   const datos: [string, string | undefined][] = [
     ['Fecha de nacimiento', p.fecha_nacimiento ? `${fFecha(p.fecha_nacimiento)} · ${edad(p.fecha_nacimiento)} años` : undefined],
     ['Sexo (fórmulas)', p.sexo === 'F' ? 'Femenino' : p.sexo === 'M' ? 'Masculino' : undefined],
@@ -41,6 +44,23 @@ export function Historia({ p, onEditar }: { p: Paciente; onEditar: () => void })
           ])}
         </div>
       </div>
+      <div className="tarjeta zona-estado">
+        <div className="tarjeta-cab"><h3>Estado de la historia clínica</h3>{p.estado === 'suspendido' && <span className="chip aviso">suspendida</span>}</div>
+        {p.estado === 'suspendido' ? (
+          <p className="small" style={{ marginTop: 0 }}>Suspendida{p.suspendido_en ? ` desde el ${fFecha(p.suspendido_en.slice(0, 10))}` : ''}. No aparece en la lista ni en la agenda. Su historia clínica está completa y se puede reactivar en cualquier momento.</p>
+        ) : (
+          <p className="small" style={{ marginTop: 0 }}>Si la persona dejó el tratamiento, suspendela: sale de la lista y de la agenda, y su historia clínica queda guardada por si vuelve.</p>
+        )}
+        <div className="fila">
+          {p.estado === 'suspendido' ? (
+            <button type="button" className="btn sec" onClick={() => reactivarPaciente(p)}><Icono nombre="reactivar" tamano={18} />Reactivar</button>
+          ) : (
+            <button type="button" className="btn sec" onClick={() => suspenderPaciente(p)}><Icono nombre="pausa" tamano={18} />Suspender</button>
+          )}
+          <span className="espacio" />
+          <BotonBorrar onClick={async () => { if (await borrarPaciente(p)) onBorrado(); }}>Borrar persona e historia clínica</BotonBorrar>
+        </div>
+      </div>
     </div>
   );
 }
@@ -55,7 +75,7 @@ export function Consultas({ consultas, onNueva, onEditar }: { consultas: Consult
         <article className="tarjeta" key={c.id}>
           <div className="tarjeta-cab">
             <div className="fila"><h3>{fFecha(c.fecha)}</h3><span className="chip">{c.tipo}</span></div>
-            <button className="btn fantasma chico" onClick={() => onEditar(c)}>Editar</button>
+            <div className="fila"><button className="btn fantasma chico" onClick={() => onEditar(c)}>Editar</button><BotonBorrar chico onClick={() => borrar.consulta(c)} /></div>
           </div>
           {c.relato && <div className="bloque"><span className="eyebrow">Relato</span><p style={{ marginTop: 4 }}>{c.relato}</p></div>}
           {c.observaciones && <div className="bloque"><span className="eyebrow">Observaciones</span><p style={{ marginTop: 4 }}>{c.observaciones}</p></div>}

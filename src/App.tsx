@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
+import { ConfirmacionHost } from './components/Confirmacion';
 import { Layout } from './components/Layout';
 import { repo } from './lib/db';
 import { iniciarSync, sesion } from './lib/db/sheets';
@@ -25,12 +26,21 @@ export default function App() {
   }, [conPlanilla]);
 
   useEffect(() => {
+    if (!demo) return;
+    const f = () => setToken(null);
+    window.addEventListener('consultorio:salir', f);
+    return () => window.removeEventListener('consultorio:salir', f);
+  }, [demo]);
+
+  useEffect(() => {
     if (conPlanilla && token) iniciarSync();
   }, [conPlanilla, token]);
 
   if (!token) return <Login onDemo={demo ? () => setToken('demo') : undefined} />;
 
   return (
+    <>
+    <ConfirmacionHost />
     <HashRouter>
       <Routes>
         <Route element={<Layout />}>
@@ -43,5 +53,6 @@ export default function App() {
         </Route>
       </Routes>
     </HashRouter>
+    </>
   );
 }

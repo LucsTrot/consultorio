@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { repo } from '../../lib/db';
 import { hoyISO, toLocalISO } from '../../lib/format';
 import type { Consulta, TipoConsulta } from '../../lib/types';
-import { Campo, Panel } from '../ui';
+import { borrar } from '../../lib/borrar';
+import { BotonBorrar, Campo, Panel, useGuardar } from '../ui';
 
 export function ConsultaForm({ pacienteId, inicial, onClose }: { pacienteId: string; inicial?: Consulta; onClose: () => void }) {
   const [c, setC] = useState<Partial<Consulta>>(inicial ?? { paciente_id: pacienteId, fecha: hoyISO(), tipo: 'Seguimiento' });
   const [recordar, setRecordar] = useState(!inicial);
   const set = <K extends keyof Consulta>(k: K, v: Consulta[K]) => setC((x) => ({ ...x, [k]: v }));
 
-  const guardar = async (e: React.FormEvent) => {
+  const { ocupado, correr } = useGuardar();
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
+    correr(async () => {
     await repo.save('consultas', c);
     if (recordar && c.proximo_control) {
       const d = new Date(c.proximo_control + 'T09:00');
@@ -18,10 +21,11 @@ export function ConsultaForm({ pacienteId, inicial, onClose }: { pacienteId: str
       await repo.save('recordatorios', { paciente_id: pacienteId, tipo: 'control', fecha: toLocalISO(d), mensaje: 'Coordinar próximo control', hecho: false });
     }
     onClose();
+    });
   };
 
   return (
-    <Panel titulo={inicial ? 'Editar consulta' : 'Nueva consulta'} eyebrow="Evolución" onClose={onClose}>
+    <Panel titulo={inicial ? 'Editar consulta' : 'Nueva consulta'} eyebrow="Evolución" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <div className="grid g2">
           <Campo label="Fecha"><input type="date" required value={c.fecha} onChange={(e) => set('fecha', e.target.value)} /></Campo>
@@ -48,6 +52,7 @@ export function ConsultaForm({ pacienteId, inicial, onClose }: { pacienteId: str
         <div className="acciones">
           <button className="btn">Guardar</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
+          {inicial && <><span className="espacio" /><BotonBorrar onClick={async () => { if (await borrar.consulta(inicial)) onClose(); }} /></>}
         </div>
       </form>
     </Panel>

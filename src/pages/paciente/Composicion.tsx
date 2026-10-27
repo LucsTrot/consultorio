@@ -4,7 +4,8 @@ import { fFecha, fNum } from '../../lib/format';
 import { categoriaIMC } from '../../lib/referencias';
 import type { Medicion, Paciente } from '../../lib/types';
 import { Linea } from '../../components/Grafico';
-import { ChipIMC, ChipNivel } from '../../components/ui';
+import { BotonBorrar, ChipIMC, ChipNivel } from '../../components/ui';
+import { borrar } from '../../lib/borrar';
 
 const GRUPOS: { nombre: string; metricas: Metrica[] }[] = [
   { nombre: 'Bioimpedancia', metricas: ['masa_muscular_pct', 'grasa_pct', 'peso', 'agua_kg', 'grasa_visceral', 'masa_osea_kg'] },
@@ -37,7 +38,7 @@ export function Composicion({ p, mediciones, onNueva, onImportar, onEditar }: { 
       <div className="tarjeta">
         <div className="tarjeta-cab">
           <div><h3>Última medición</h3><span className="mono small muted">{fFecha(ultima.fecha)}</span></div>
-          <button className="btn fantasma chico" onClick={() => onEditar(ultima)}>Editar</button>
+          <div className="fila"><button className="btn fantasma chico" onClick={() => onEditar(ultima)}>Editar</button><BotonBorrar chico onClick={() => borrar.medicion(ultima)} /></div>
         </div>
         <div className="scroll-x">
           <table className="tabla">

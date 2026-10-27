@@ -70,7 +70,7 @@ Todo con la **cuenta de Google de Sol**. La planilla, la carpeta de laboratorios
 |---|---|
 | La app (cualquier archivo del repo) | Subir el cambio a `main`. Se publica sola en un par de minutos. |
 | El `Code.gs` | Pegar el nuevo en el editor → *Implementar → Administrar implementaciones* → lápiz → *Versión: Nueva versión* → *Implementar*. La URL no cambia y no hay que tocar GitHub. |
-| Las columnas de la planilla (cuando cambie el `Code.gs`) | Después de actualizarlo: *Consultorio → Configurar (primera vez)* otra vez. Reescribe los encabezados; no toca la contraseña ni los datos. |
+| Las columnas de la planilla (cuando cambie el `Code.gs`) | Se agregan solas la primera vez que la app guarda. Si querés verlas antes: *Consultorio → Configurar (primera vez)*. Reescribe los encabezados; no toca la contraseña ni los datos. |
 | La contraseña | En la planilla: *Consultorio → Cambiar contraseña*. Cierra todas las sesiones abiertas. |
 | Un celular perdido | *Consultorio → Cerrar todas las sesiones*. |
 

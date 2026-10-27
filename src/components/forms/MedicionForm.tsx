@@ -4,7 +4,8 @@ import { repo } from '../../lib/db';
 import { fNum, hoyISO } from '../../lib/format';
 import { categoriaIMC } from '../../lib/referencias';
 import type { Medicion, Paciente } from '../../lib/types';
-import { Campo, ChipIMC, ChipNivel, NumInput, Panel } from '../ui';
+import { borrar } from '../../lib/borrar';
+import { BotonBorrar, Campo, ChipIMC, ChipNivel, NumInput, Panel, useGuardar } from '../ui';
 
 type NumKey =
   | 'peso' | 'grasa_pct' | 'masa_muscular_pct' | 'agua_kg' | 'grasa_visceral' | 'masa_osea_kg' | 'proteina_pct'
@@ -31,7 +32,7 @@ export function MedicionForm({ paciente, inicial, onClose }: { paciente: Pacient
   const [m, setM] = useState<Partial<Medicion>>(
     inicial ?? { paciente_id: paciente.id, fecha: hoyISO(), fuente: 'balanza', talla_cm: paciente.talla_cm },
   );
-  const [guardando, setGuardando] = useState(false);
+  const { ocupado, correr } = useGuardar();
   const set = (k: NumKey, v: number | undefined) => setM((x) => ({ ...x, [k]: v }));
   const actual = { ...m, fecha: m.fecha ?? hoyISO() } as Medicion;
   const vista = useMemo(() => indices(actual, paciente).filter((i) => i.clave !== 'imc'), [m, paciente]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -40,20 +41,17 @@ export function MedicionForm({ paciente, inicial, onClose }: { paciente: Pacient
   // Cintura y cadera van en metros: si alguien escribe 74 en vez de 0,74, se avisa.
   const enCm = [m.cintura_m, m.cadera_m].some((v) => v != null && v > 3);
 
-  const guardar = async (e: React.FormEvent) => {
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
-    setGuardando(true);
-    try {
+    correr(async () => {
       await repo.save('mediciones', m);
       if (m.talla_cm && m.talla_cm !== paciente.talla_cm) await repo.save('pacientes', { id: paciente.id, talla_cm: m.talla_cm });
       onClose();
-    } finally {
-      setGuardando(false);
-    }
+    });
   };
 
   return (
-    <Panel titulo={inicial ? 'Editar medición' : 'Nueva medición'} eyebrow="Composición corporal" onClose={onClose}>
+    <Panel titulo={inicial ? 'Editar medición' : 'Nueva medición'} eyebrow="Composición corporal" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <div className="grid g2">
           <Campo label="Fecha"><input type="date" required value={m.fecha} onChange={(e) => setM({ ...m, fecha: e.target.value })} /></Campo>
@@ -109,8 +107,9 @@ export function MedicionForm({ paciente, inicial, onClose }: { paciente: Pacient
         )}
 
         <div className="acciones">
-          <button className="btn" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar medición'}</button>
+          <button className="btn">Guardar medición</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
+          {inicial && <><span className="espacio" /><BotonBorrar onClick={async () => { if (await borrar.medicion(inicial)) onClose(); }} /></>}
         </div>
       </form>
     </Panel>

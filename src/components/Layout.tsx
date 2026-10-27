@@ -2,14 +2,19 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import lockup from '../assets/marca/lockup-horizontal-inverso.svg';
 import { repo, useRows } from '../lib/db';
+import { salir } from '../lib/db/sheets';
+import { Icono, type NombreIcono } from './Icono';
 
-const NAV: { to: string; n: string; label: string; corto?: string; end?: boolean; badge?: boolean }[] = [
-  { to: '/', n: '01', label: 'Inicio', end: true },
-  { to: '/pacientes', n: '02', label: 'Pacientes' },
-  { to: '/agenda', n: '03', label: 'Agenda' },
-  { to: '/recordatorios', n: '04', label: 'Recordatorios', corto: 'Avisos', badge: true },
-  { to: '/ajustes', n: '05', label: 'Ajustes' },
+const NAV: { to: string; icono: NombreIcono; label: string; corto?: string; end?: boolean; badge?: boolean }[] = [
+  { to: '/', icono: 'inicio', label: 'Inicio', end: true },
+  { to: '/pacientes', icono: 'pacientes', label: 'Pacientes' },
+  { to: '/agenda', icono: 'agenda', label: 'Agenda' },
+  { to: '/recordatorios', icono: 'recordatorios', label: 'Recordatorios', corto: 'Avisos', badge: true },
+  { to: '/ajustes', icono: 'ajustes', label: 'Ajustes' },
 ];
+
+/** Hay sesión que cerrar con la planilla conectada y en la demo; en modo local de prueba no. */
+const puedeSalir = repo.modo === 'sheets' || import.meta.env.MODE === 'demo';
 
 /** Avisos del sistema mientras la app está abierta (o instalada y en segundo plano). */
 function useAvisos() {
@@ -63,7 +68,7 @@ export function Layout() {
         <nav className="nav" aria-label="Secciones">
           {NAV.map((i) => (
             <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => (isActive ? 'activo' : '')}>
-              <span className="n">{i.n}</span>
+              <Icono nombre={i.icono} />
               <span className="largo">{i.label}</span>
               <span className="corto" style={{ display: 'none' }}>{i.corto ?? i.label}</span>
               {i.badge && pendientes > 0 && <span className="badge" aria-label={`${pendientes} pendientes`}>{pendientes}</span>}
@@ -71,12 +76,23 @@ export function Layout() {
           ))}
         </nav>
         <div className="barra-pie">
-          {repo.modo === 'local' ? 'Modo local · este navegador' : 'Planilla de Google'}
+          {puedeSalir && (
+            <button type="button" className="salir" onClick={() => salir()}>
+              <Icono nombre="salir" />
+              <span>Salir</span>
+            </button>
+          )}
+          <span className="barra-estado">{repo.modo === 'local' ? 'Modo local · este navegador' : 'Planilla de Google'}</span>
         </div>
       </aside>
       {/* En el celular la barra lateral pasa abajo: arriba queda una franja con la marca. */}
       <header className="marca-movil">
         <img src={lockup} alt="Lic. María Sol Cardacci · Lic. en Nutrición" width={376} height={52} />
+        {puedeSalir && (
+          <button type="button" className="salir-movil" onClick={() => salir()} aria-label="Salir">
+            <Icono nombre="salir" tamano={22} />
+          </button>
+        )}
       </header>
       <main className="contenido">
         <Outlet />

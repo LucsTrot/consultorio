@@ -3,7 +3,7 @@ import { repo } from '../../lib/db';
 import { fFecha, fNum } from '../../lib/format';
 import { autoMapear, CAMPOS_BALANZA, filasAMediciones, leerArchivoTabla, type CampoBalanza, type Mapeo } from '../../lib/scaleImport';
 import type { Medicion, Paciente } from '../../lib/types';
-import { Campo, Panel } from '../ui';
+import { Campo, Panel, useGuardar } from '../ui';
 
 export function ImportarBalanza({ paciente, existentes, onClose }: { paciente: Paciente; existentes: Medicion[]; onClose: () => void }) {
   const [filas, setFilas] = useState<string[][]>([]);
@@ -29,13 +29,14 @@ export function ImportarBalanza({ paciente, existentes, onClose }: { paciente: P
   const fechasYa = new Set(existentes.map((m) => m.fecha));
   const aImportar = nuevas.filter((n) => !fechasYa.has(n.fecha!));
 
-  const importar = async () => {
+  const { ocupado, correr } = useGuardar();
+  const importar = () => correr(async () => {
     for (const m of aImportar) await repo.save('mediciones', m);
     setHecho(aImportar.length);
-  };
+  });
 
   return (
-    <Panel titulo="Importar desde la balanza" eyebrow="Composición corporal" onClose={onClose}>
+    <Panel titulo="Importar desde la balanza" eyebrow="Composición corporal" onClose={onClose} ocupado={ocupado}>
       {hecho !== null ? (
         <div className="form">
           <p>Se importaron {hecho} mediciones.</p>

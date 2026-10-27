@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { repo } from '../../lib/db';
 import type { Antecedentes, Paciente } from '../../lib/types';
-import { Campo, NumInput, Panel } from '../ui';
+import { Campo, NumInput, Panel, useGuardar } from '../ui';
 
 const ANTECEDENTES: [keyof Antecedentes, string][] = [
   ['personales', 'Antecedentes personales'],
@@ -18,21 +18,21 @@ const ANTECEDENTES: [keyof Antecedentes, string][] = [
 
 export function PacienteForm({ inicial, onClose, onGuardado }: { inicial?: Paciente; onClose: () => void; onGuardado?: (p: Paciente) => void }) {
   const [p, setP] = useState<Partial<Paciente>>(inicial ?? { modalidad: 'Presencial', antecedentes: {} });
-  const [guardando, setGuardando] = useState(false);
+  const { ocupado, correr } = useGuardar();
   const set = <K extends keyof Paciente>(k: K, v: Paciente[K]) => setP((x) => ({ ...x, [k]: v }));
   const setA = (k: keyof Antecedentes, v: string) => setP((x) => ({ ...x, antecedentes: { ...x.antecedentes, [k]: v } }));
 
-  const guardar = async (e: React.FormEvent) => {
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
-    setGuardando(true);
-    const g = await repo.save('pacientes', p);
-    setGuardando(false);
+    correr(async () => {
+    const g = await repo.save('pacientes', { estado: 'activo', ...p });
     onGuardado?.(g);
     onClose();
+    });
   };
 
   return (
-    <Panel titulo={inicial ? 'Editar ficha' : 'Nueva persona'} eyebrow="Historia clínica" onClose={onClose}>
+    <Panel titulo={inicial ? 'Editar ficha' : 'Nueva persona'} eyebrow="Historia clínica" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <fieldset>
           <legend>Datos personales</legend>
@@ -83,7 +83,7 @@ export function PacienteForm({ inicial, onClose, onGuardado }: { inicial?: Pacie
         </fieldset>
 
         <div className="acciones">
-          <button className="btn" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button>
+          <button className="btn">Guardar</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
         </div>
       </form>

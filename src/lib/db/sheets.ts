@@ -64,6 +64,12 @@ export async function logout() {
   try { await llamar('logout'); } finally { datos = null; sesion.guardar(null); }
 }
 
+/** Cierra la sesión en este dispositivo. En la demo vuelve a la pantalla de ingreso. */
+export async function salir() {
+  if (SHEETS_URL) return logout();
+  window.dispatchEvent(new Event('consultorio:salir'));
+}
+
 function cargar(forzar = false): Promise<Datos> {
   if (datos && !forzar) return Promise.resolve(datos);
   if (cargando) return cargando;
@@ -122,11 +128,24 @@ export const sheetsRepo: Repo = {
     emit(tabla as Tabla);
     return guardada;
   },
-  async archive(tabla, id) {
-    await llamar('archive', { tabla, id });
+  async remove(tabla, id) {
+    await llamar('borrar', { tabla, id });
     const d = await cargar();
-    (d[tabla] as { id: string }[]).splice((d[tabla] as { id: string }[]).findIndex((r) => r.id === id), 1);
+    const sacar = (t: Tabla, f: (r: Record<string, unknown>) => boolean) => {
+      (d[t] as unknown as Record<string, unknown>[]) = (d[t] as unknown as Record<string, unknown>[]).filter((r) => !f(r));
+    };
+    sacar(tabla, (r) => r.id === id);
+    if (tabla === 'turnos') sacar('recordatorios', (r) => r.turno_id === id);
     emit(tabla);
+    if (tabla === 'turnos') emit('recordatorios');
+  },
+  async removePaciente(id) {
+    await llamar('borrarPaciente', { id });
+    const d = await cargar();
+    for (const t of TABLAS) {
+      (d[t] as unknown as Record<string, unknown>[]) = (d[t] as unknown as Record<string, unknown>[]).filter((r) => (t === 'pacientes' ? r.id : r.paciente_id) !== id);
+      emit(t);
+    }
   },
   async uploadFile(path, file) {
     const nombre = path.split('/').pop() ?? 'informe';

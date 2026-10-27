@@ -13,7 +13,8 @@ const saludo = () => { const h = new Date().getHours(); return h < 13 ? 'Buen d√
 
 export default function Inicio() {
   const nav = useNavigate();
-  const { rows: pacientes, cargando } = useRows('pacientes');
+  const { rows: todos, cargando } = useRows('pacientes');
+  const pacientes = useMemo(() => todos.filter((p) => p.estado !== 'suspendido'), [todos]);
   const { rows: turnos } = useRows('turnos');
   const { rows: recs } = useRows('recordatorios');
   const { rows: consultas } = useRows('consultas');
@@ -28,7 +29,7 @@ export default function Inicio() {
       cargarDemo().then(() => { try { localStorage.setItem('demo.datos', '2'); } catch { /* sin storage */ } });
     }
   }, [cargando, pacientes.length]);
-  const pac = useMemo(() => new Map(pacientes.map((p) => [p.id, p])), [pacientes]);
+  const pac = useMemo(() => new Map(todos.map((p) => [p.id, p])), [todos]);
   const tur = useMemo(() => new Map(turnos.map((t) => [t.id, t])), [turnos]);
 
   const hoy = turnos.filter((t) => isToday(new Date(t.inicio))).sort((a, b) => a.inicio.localeCompare(b.inicio));
@@ -54,7 +55,7 @@ export default function Inicio() {
       {repo.modo === 'local' && (
         <div className="aviso-modo">
           <span>{import.meta.env.MODE === 'demo' ? <><strong>Demo con personas ficticias.</strong> Lo que cargues queda solo en este navegador. Las exportaciones descargan en la app instalada, no en esta vista.</> : <><strong>Modo local.</strong> Los datos se guardan solo en este navegador. Para usarla con pacientes reales conect√° la planilla (ver README).</>}</span>
-          {!cargando && !pacientes.length && <button className="btn chico" onClick={() => cargarDemo()}>Cargar datos de ejemplo</button>}
+          {!cargando && !todos.length && <button className="btn chico" onClick={() => cargarDemo()}>Cargar datos de ejemplo</button>}
         </div>
       )}
 

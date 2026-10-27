@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { AJUSTES_DEFAULT, useAjustes, type Ajustes as T } from '../lib/ajustes';
 import { repo } from '../lib/db';
-import { logout } from '../lib/db/sheets';
+import { confirmar } from '../lib/confirmar';
+import { salir } from '../lib/db/sheets';
 import { cargarDemo } from '../lib/demo';
-import { BotonConfirmar, Cabecera, Campo } from '../components/ui';
+import { Cabecera, Campo } from '../components/ui';
 
 const DATOS: [keyof T, string][] = [
   ['profesional', 'Nombre profesional'], ['matricula', 'Matrícula'], ['sitio', 'Sitio'], ['mail', 'Mail'],
@@ -17,7 +18,7 @@ export default function Ajustes() {
 
   return (
     <>
-      <Cabecera eyebrow="05 · Ajustes" titulo="Ajustes" />
+      <Cabecera eyebrow="Configuración" titulo="Ajustes" />
       <div className="grid g2">
         <div className="tarjeta form">
           <h3>Datos de la marca</h3>
@@ -49,12 +50,12 @@ export default function Ajustes() {
             {repo.modo === 'local' ? (
               <>
                 <p className="small" style={{ margin: 0 }}>Modo local: todo vive en este navegador. Sirve para probar; para pacientes reales conectá la planilla (ver README).</p>
-                <div><BotonConfirmar className="btn sec" pregunta="Reemplaza los datos locales. ¿Seguir?" onConfirm={async () => { await cargarDemo(); setOk('Datos de ejemplo cargados.'); }}>Reiniciar con datos de ejemplo</BotonConfirmar></div>
+                <div><button className="btn sec" onClick={async () => { if (await confirmar({ titulo: '¿Reiniciar con datos de ejemplo?', texto: 'Se reemplaza todo lo cargado en este navegador por las personas de ejemplo.', accion: 'Reiniciar', peligro: true, ejecutar: cargarDemo })) setOk('Datos de ejemplo cargados.'); }}>Reiniciar con datos de ejemplo</button></div>
               </>
             ) : (
               <>
                 <p className="small" style={{ margin: 0 }}>Los datos viven en la planilla de Google del consultorio. Desde el menú Consultorio de la planilla se cambia la contraseña o se cierran todas las sesiones.</p>
-                <div><button className="btn sec" onClick={() => logout()}>Cerrar sesión en este dispositivo</button></div>
+                <div><button className="btn sec" onClick={() => salir()}>Cerrar sesión en este dispositivo</button></div>
               </>
             )}
             {ok && <p className="small" style={{ color: 'var(--ok)', margin: 0 }}>{ok}</p>}

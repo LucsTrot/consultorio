@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { repo, useRows } from '../../lib/db';
 import { nombreCompleto, toLocalISO } from '../../lib/format';
 import type { Recordatorio, TipoRecordatorio } from '../../lib/types';
-import { Campo, Panel } from '../ui';
+import { borrar } from '../../lib/borrar';
+import { BotonBorrar, Campo, Panel, useGuardar } from '../ui';
 
 export function RecordatorioForm({ inicial, pacienteId, onClose }: { inicial?: Recordatorio; pacienteId?: string; onClose: () => void }) {
   const { rows: pacientes } = useRows('pacientes');
@@ -11,14 +12,17 @@ export function RecordatorioForm({ inicial, pacienteId, onClose }: { inicial?: R
   manana.setHours(9, 0, 0, 0);
   const [r, setR] = useState<Partial<Recordatorio>>(inicial ?? { paciente_id: pacienteId ?? null, tipo: 'tarea', fecha: toLocalISO(manana), mensaje: '', hecho: false });
 
-  const guardar = async (e: React.FormEvent) => {
+  const { ocupado, correr } = useGuardar();
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
-    await repo.save('recordatorios', r);
-    onClose();
+    correr(async () => {
+      await repo.save('recordatorios', r);
+      onClose();
+    });
   };
 
   return (
-    <Panel titulo={inicial ? 'Editar recordatorio' : 'Nuevo recordatorio'} eyebrow="Recordatorios" onClose={onClose}>
+    <Panel titulo={inicial ? 'Editar recordatorio' : 'Nuevo recordatorio'} eyebrow="Recordatorios" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <Campo label="Qué hay que recordar"><input required value={r.mensaje} onChange={(e) => setR({ ...r, mensaje: e.target.value })} /></Campo>
         <div className="grid g2">
@@ -39,6 +43,7 @@ export function RecordatorioForm({ inicial, pacienteId, onClose }: { inicial?: R
         <div className="acciones">
           <button className="btn">Guardar</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
+          {inicial && <><span className="espacio" /><BotonBorrar onClick={async () => { if (await borrar.recordatorio(inicial)) onClose(); }} /></>}
         </div>
       </form>
     </Panel>

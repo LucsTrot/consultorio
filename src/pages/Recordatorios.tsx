@@ -6,6 +6,8 @@ import { repo, useRows } from '../lib/db';
 import { fFecha, fHora, nombreCompleto, waLink } from '../lib/format';
 import type { Paciente, Recordatorio, Turno } from '../lib/types';
 import { RecordatorioForm } from '../components/forms/RecordatorioForm';
+import { Icono } from '../components/Icono';
+import { borrar } from '../lib/borrar';
 import { Cabecera, Vacio } from '../components/ui';
 
 export function mensajeWhatsApp(r: Recordatorio, p?: Paciente, t?: Turno) {
@@ -49,6 +51,7 @@ export function FilaRecordatorio({ r, p, t, onEditar }: { r: Recordatorio; p?: P
           </a>
         )}
         <button className="btn fantasma chico" onClick={onEditar}>Editar</button>
+        <button type="button" className="btn fantasma chico icono-solo borrar" onClick={() => borrar.recordatorio(r)} aria-label="Borrar recordatorio" title="Borrar"><Icono nombre="borrar" tamano={16} /></button>
       </td>
     </tr>
   );
@@ -74,7 +77,7 @@ export default function Recordatorios() {
 
   return (
     <>
-      <Cabecera eyebrow="04 · Recordatorios" titulo="Recordatorios">
+      <Cabecera eyebrow="Avisos y tareas" titulo="Recordatorios">
         <button className="btn sec" onClick={() => setVerHechos(!verHechos)}>{verHechos ? 'Ocultar hechos' : 'Ver hechos'}</button>
         <button className="btn" onClick={() => setModal({})}>Nuevo recordatorio</button>
       </Cabecera>

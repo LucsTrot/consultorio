@@ -3,7 +3,8 @@ import { repo } from '../../lib/db';
 import { hoyISO } from '../../lib/format';
 import { CATALOGO, estado, rangoPara } from '../../lib/labs';
 import type { Laboratorio, Paciente, ResultadoLab } from '../../lib/types';
-import { Campo, NumInput, Panel } from '../ui';
+import { borrar } from '../../lib/borrar';
+import { BotonBorrar, Campo, NumInput, Panel, useGuardar } from '../ui';
 
 const GRUPOS = [...new Set(CATALOGO.map((a) => a.grupo))];
 
@@ -11,7 +12,7 @@ export function LaboratorioForm({ paciente, inicial, onClose }: { paciente: Paci
   const [l, setL] = useState<Partial<Laboratorio>>(inicial ?? { paciente_id: paciente.id, fecha: hoyISO(), resultados: [] });
   const [archivo, setArchivo] = useState<File | null>(null);
   const [otro, setOtro] = useState('');
-  const [guardando, setGuardando] = useState(false);
+  const { ocupado, correr } = useGuardar();
   const res = l.resultados ?? [];
 
   const agregar = (nombres: string[]) => {
@@ -25,21 +26,21 @@ export function LaboratorioForm({ paciente, inicial, onClose }: { paciente: Paci
   const upd = (i: number, cambio: Partial<ResultadoLab>) => setL({ ...l, resultados: res.map((r, j) => (j === i ? { ...r, ...cambio } : r)) });
   const quitar = (i: number) => setL({ ...l, resultados: res.filter((_, j) => j !== i) });
 
-  const guardar = async (e: React.FormEvent) => {
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
-    setGuardando(true);
+    correr(async () => {
     let extra: Partial<Laboratorio> = {};
     if (archivo) {
       const path = `${paciente.id}/${l.fecha}-${archivo.name.replace(/[^\w.-]/g, '_')}`;
       extra = { archivo_path: await repo.uploadFile(path, archivo), archivo_nombre: archivo.name };
     }
     await repo.save('laboratorios', { ...l, ...extra, resultados: res.filter((r) => r.valor != null) });
-    setGuardando(false);
     onClose();
+    });
   };
 
   return (
-    <Panel titulo={inicial ? 'Editar laboratorio' : 'Cargar laboratorio'} eyebrow="Laboratorios" onClose={onClose}>
+    <Panel titulo={inicial ? 'Editar laboratorio' : 'Cargar laboratorio'} eyebrow="Laboratorios" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <div className="grid g2">
           <Campo label="Fecha de extracción"><input type="date" required value={l.fecha} onChange={(e) => setL({ ...l, fecha: e.target.value })} /></Campo>
@@ -96,8 +97,9 @@ export function LaboratorioForm({ paciente, inicial, onClose }: { paciente: Paci
         </fieldset>
         <Campo label="Notas"><textarea rows={2} value={l.notas ?? ''} onChange={(e) => setL({ ...l, notas: e.target.value })} /></Campo>
         <div className="acciones">
-          <button className="btn" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button>
+          <button className="btn">Guardar</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
+          {inicial && <><span className="espacio" /><BotonBorrar onClick={async () => { if (await borrar.laboratorio(inicial)) onClose(); }} /></>}
         </div>
       </form>
     </Panel>

@@ -9,8 +9,13 @@ export interface Repo {
   list<K extends Tabla>(tabla: K, where?: Partial<TablaTipo[K]>): Promise<TablaTipo[K][]>;
   get<K extends Tabla>(tabla: K, id: string): Promise<TablaTipo[K] | undefined>;
   save<K extends Tabla>(tabla: K, row: Partial<TablaTipo[K]>): Promise<TablaTipo[K]>;
-  /** Baja lógica (eliminado_en). */
-  archive(tabla: Tabla, id: string): Promise<void>;
+  /**
+   * Borrado definitivo de un registro. Arrastra lo que depende de él:
+   * un turno se lleva sus recordatorios; un laboratorio, su archivo adjunto.
+   */
+  remove(tabla: Tabla, id: string): Promise<void>;
+  /** Borra a la persona y toda su historia clínica (consultas, mediciones, laboratorios, turnos, recordatorios y archivos). */
+  removePaciente(id: string): Promise<void>;
   uploadFile(path: string, file: Blob): Promise<string>;
   fileUrl(path: string): Promise<string>;
 }

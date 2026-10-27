@@ -4,6 +4,8 @@ import { fFecha, fNum } from '../../lib/format';
 import { estado, serieAnalito, todosLosResultados } from '../../lib/labs';
 import type { Laboratorio } from '../../lib/types';
 import { Linea } from '../../components/Grafico';
+import { BotonBorrar } from '../../components/ui';
+import { borrar } from '../../lib/borrar';
 
 export function Laboratorios({ labs, onNuevo, onEditar }: { labs: Laboratorio[]; onNuevo: () => void; onEditar: (l: Laboratorio) => void }) {
   const orden = [...labs].sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -49,6 +51,7 @@ export function Laboratorios({ labs, onNuevo, onEditar }: { labs: Laboratorio[];
             <div className="fila">
               {l.archivo_path && <button className="btn sec chico" onClick={() => abrir(l)}>Ver informe</button>}
               <button className="btn fantasma chico" onClick={() => onEditar(l)}>Editar</button>
+              <BotonBorrar chico onClick={() => borrar.laboratorio(l)} />
             </div>
           </div>
           <div className="scroll-x">

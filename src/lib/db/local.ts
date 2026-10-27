@@ -64,9 +64,24 @@ export const localRepo: Repo = {
     emit(tabla as Tabla);
     return final as TablaTipo[typeof tabla];
   },
-  async archive(tabla, id) {
-    await localDB.table(tabla).update(id, { eliminado_en: new Date().toISOString() });
+  async remove(tabla, id) {
+    await localDB.transaction('rw', localDB.tables, async () => {
+      const fila = await localDB.table(tabla).get(id);
+      if (tabla === 'laboratorios' && fila?.archivo_path) await localDB.archivos.delete(fila.archivo_path);
+      if (tabla === 'turnos') await localDB.recordatorios.where('turno_id').equals(id).delete();
+      await localDB.table(tabla).delete(id);
+    });
     emit(tabla);
+    if (tabla === 'turnos') emit('recordatorios');
+  },
+  async removePaciente(id) {
+    await localDB.transaction('rw', localDB.tables, async () => {
+      const labs = await localDB.laboratorios.where('paciente_id').equals(id).toArray();
+      await Promise.all(labs.filter((l) => l.archivo_path).map((l) => localDB.archivos.delete(l.archivo_path!)));
+      for (const t of (['consultas', 'mediciones', 'laboratorios', 'turnos', 'recordatorios'] as const)) await localDB.table(t).where('paciente_id').equals(id).delete();
+      await localDB.pacientes.delete(id);
+    });
+    (['pacientes', ...(['consultas', 'mediciones', 'laboratorios', 'turnos', 'recordatorios'] as const)] as Tabla[]).forEach(emit);
   },
   async uploadFile(path, file) {
     await localDB.archivos.put({ path, blob: file });

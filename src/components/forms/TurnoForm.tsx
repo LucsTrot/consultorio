@@ -3,7 +3,8 @@ import { leerAjustes } from '../../lib/ajustes';
 import { repo, useRows } from '../../lib/db';
 import { nombreCompleto, toLocalISO } from '../../lib/format';
 import type { EstadoTurno, Modalidad, TipoConsulta, Turno } from '../../lib/types';
-import { BotonConfirmar, Campo, Panel } from '../ui';
+import { borrar } from '../../lib/borrar';
+import { BotonBorrar, Campo, Panel, useGuardar } from '../ui';
 
 export function TurnoForm({ inicial, inicio, pacienteId, onClose }: { inicial?: Turno; inicio?: string; pacienteId?: string; onClose: () => void }) {
   const aj = leerAjustes();
@@ -18,8 +19,10 @@ export function TurnoForm({ inicial, inicio, pacienteId, onClose }: { inicial?: 
     setT((x) => ({ ...x, paciente_id: id, modalidad: inicial ? x.modalidad : p?.modalidad ?? x.modalidad }));
   };
 
-  const guardar = async (e: React.FormEvent) => {
+  const { ocupado, correr } = useGuardar();
+  const guardar = (e: React.FormEvent) => {
     e.preventDefault();
+    correr(async () => {
     const g = await repo.save('turnos', t);
     // Un recordatorio por turno, siempre sincronizado con la fecha del turno.
     const previos = await repo.list('recordatorios', { turno_id: g.id });
@@ -31,22 +34,20 @@ export function TurnoForm({ inicial, inicio, pacienteId, onClose }: { inicial?: 
       await repo.save('recordatorios', { paciente_id: g.paciente_id, turno_id: g.id, tipo: 'turno', fecha: toLocalISO(aviso), mensaje: 'Recordar turno', hecho: false });
     }
     onClose();
+    });
   };
 
   const eliminar = async () => {
-    if (!inicial) return;
-    await repo.archive('turnos', inicial.id);
-    for (const r of await repo.list('recordatorios', { turno_id: inicial.id })) await repo.archive('recordatorios', r.id);
-    onClose();
+    if (inicial && (await borrar.turno(inicial, pacientes.find((p) => p.id === inicial.paciente_id)))) onClose();
   };
 
   return (
-    <Panel titulo={inicial ? 'Turno' : 'Nuevo turno'} eyebrow="Agenda" onClose={onClose}>
+    <Panel titulo={inicial ? 'Turno' : 'Nuevo turno'} eyebrow="Agenda" onClose={onClose} ocupado={ocupado}>
       <form className="form" onSubmit={guardar}>
         <Campo label="Persona">
           <select required value={t.paciente_id ?? ''} onChange={(e) => elegirPaciente(e.target.value)}>
             <option value="">Elegir…</option>
-            {[...pacientes].sort((a, b) => a.apellido.localeCompare(b.apellido)).map((p) => <option key={p.id} value={p.id}>{nombreCompleto(p)}</option>)}
+            {[...pacientes].filter((p) => p.estado !== 'suspendido' || p.id === t.paciente_id).sort((a, b) => a.apellido.localeCompare(b.apellido)).map((p) => <option key={p.id} value={p.id}>{nombreCompleto(p)}</option>)}
           </select>
         </Campo>
         <div className="grid g2">
@@ -79,7 +80,7 @@ export function TurnoForm({ inicial, inicio, pacienteId, onClose }: { inicial?: 
         <div className="acciones">
           <button className="btn">Guardar turno</button>
           <button type="button" className="btn sec" onClick={onClose}>Cancelar</button>
-          {inicial && <><span className="espacio" /><BotonConfirmar pregunta="¿Eliminar el turno?" onConfirm={eliminar}>Eliminar</BotonConfirmar></>}
+          {inicial && <><span className="espacio" /><BotonBorrar onClick={eliminar} /></>}
         </div>
       </form>
     </Panel>

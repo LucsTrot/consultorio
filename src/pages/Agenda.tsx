@@ -47,7 +47,7 @@ export default function Agenda() {
 
   return (
     <>
-      <Cabecera eyebrow="03 · Agenda" titulo={`Semana del ${format(semana, "d 'de' MMMM", { locale: es })}`}>
+      <Cabecera eyebrow="Agenda" titulo={`Semana del ${format(semana, "d 'de' MMMM", { locale: es })}`}>
         <button className="btn sec" onClick={() => setSemana(addWeeks(semana, -1))} aria-label="Semana anterior">←</button>
         <button className="btn sec" onClick={() => setSemana(startOfWeek(new Date(), { weekStartsOn: 1 }))}>Hoy</button>
         <button className="btn sec" onClick={() => setSemana(addWeeks(semana, 1))} aria-label="Semana siguiente">→</button>

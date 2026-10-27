@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { reactivarPaciente } from '../lib/borrar';
 import { edad } from '../lib/calc';
 import { useRow, useRows } from '../lib/db';
 import { fFecha, fHora, nombreCompleto, waLink } from '../lib/format';
@@ -24,6 +25,7 @@ type Modal =
 
 export default function Paciente() {
   const { id } = useParams();
+  const navegar = useNavigate();
   const { row: p, cargando } = useRow('pacientes', id);
   const { rows: consultas } = useRows('consultas', { paciente_id: id });
   const { rows: mediciones } = useRows('mediciones', { paciente_id: id });
@@ -55,6 +57,7 @@ export default function Paciente() {
           <h1>{nombreCompleto(p)}</h1>
           <div className="fila small muted" style={{ marginTop: 10 }}>
             {e !== undefined && <span>{e} años</span>}
+            {p.estado === 'suspendido' && <span className="chip aviso">suspendida</span>}
             {p.modalidad && <span className="chip">{p.modalidad}</span>}
             {p.telefono && <a href={waLink(p.telefono, `Hola ${p.nombre}, `)} target="_blank" rel="noopener">WhatsApp</a>}
             {p.email && <a href={`mailto:${p.email}`}>{p.email}</a>}
@@ -66,6 +69,13 @@ export default function Paciente() {
           <MenuExportar paciente={p} consultas={consultas} mediciones={mediciones} labs={labs} />
         </div>
       </div>
+
+      {p.estado === 'suspendido' && (
+        <div className="aviso-modo">
+          <span><strong>Historia clínica suspendida.</strong> No aparece en la lista ni en la agenda. Podés consultarla y exportarla igual.</span>
+          <button className="btn chico" onClick={() => reactivarPaciente(p)}>Reactivar</button>
+        </div>
+      )}
 
       <Tabs<Tab>
         activo={tab}
@@ -81,7 +91,7 @@ export default function Paciente() {
       />
 
       {tab === 'resumen' && <Resumen p={p} mediciones={mediciones} consultas={consultas} labs={labs} />}
-      {tab === 'historia' && <Historia p={p} onEditar={() => setModal({ t: 'ficha' })} />}
+      {tab === 'historia' && <Historia p={p} onEditar={() => setModal({ t: 'ficha' })} onBorrado={() => navegar('/pacientes')} />}
       {tab === 'consultas' && <Consultas consultas={consultas} onNueva={() => setModal({ t: 'consulta' })} onEditar={(c) => setModal({ t: 'consulta', c })} />}
       {tab === 'composicion' && (
         <Composicion p={p} mediciones={mediciones} onNueva={() => setModal({ t: 'medicion' })} onImportar={() => setModal({ t: 'importar' })} onEditar={(m) => setModal({ t: 'medicion', m })} />

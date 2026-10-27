@@ -13,11 +13,14 @@ export default function Pacientes() {
   const { rows: turnos } = useRows('turnos');
   const [q, setQ] = useState('');
   const [nuevo, setNuevo] = useState(false);
+  const [vista, setVista] = useState<'activos' | 'suspendidos'>('activos');
+  const suspendidos = pacientes.filter((p) => p.estado === 'suspendido').length;
 
   const lista = useMemo(() => {
     const ahora = new Date().toISOString();
     const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     return pacientes
+      .filter((p) => (vista === 'suspendidos' ? p.estado === 'suspendido' : p.estado !== 'suspendido'))
       .filter((p) => !q || norm(`${p.nombre} ${p.apellido} ${p.dni ?? ''} ${p.telefono ?? ''}`).includes(norm(q)))
       .map((p) => ({
         p,
@@ -25,20 +28,27 @@ export default function Pacientes() {
         proximo: turnos.filter((t) => t.paciente_id === p.id && t.inicio >= ahora.slice(0, 16) && !['cancelado', 'ausente'].includes(t.estado)).map((t) => t.inicio).sort()[0],
       }))
       .sort((a, b) => a.p.apellido.localeCompare(b.p.apellido));
-  }, [pacientes, consultas, turnos, q]);
+  }, [pacientes, consultas, turnos, q, vista]);
 
   return (
     <>
-      <Cabecera eyebrow="02 · Historias clínicas" titulo="Pacientes">
+      <Cabecera eyebrow="Historias clínicas" titulo="Pacientes">
         <button className="btn" onClick={() => setNuevo(true)}>Nueva persona</button>
       </Cabecera>
       <div className="tarjeta">
-        <input type="search" placeholder="Buscar por nombre, DNI o teléfono" value={q} onChange={(e) => setQ(e.target.value)} style={{ marginBottom: 14, maxWidth: 420 }} aria-label="Buscar" />
+        <div className="fila" style={{ marginBottom: 14 }}>
+          <input type="search" placeholder="Buscar por nombre, DNI o teléfono" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 420, flex: 1 }} aria-label="Buscar" />
+          <div className="segmento" role="group" aria-label="Mostrar">
+            <button type="button" aria-pressed={vista === 'activos'} onClick={() => setVista('activos')}>Activos · {pacientes.length - suspendidos}</button>
+            <button type="button" aria-pressed={vista === 'suspendidos'} onClick={() => setVista('suspendidos')}>Suspendidos · {suspendidos}</button>
+          </div>
+        </div>
         {!cargando && !pacientes.length ? (
           <Vacio titulo="Todavía no hay historias clínicas" texto="Cargá la primera persona para empezar su historia clínica." accion={<button className="btn" onClick={() => setNuevo(true)}>Nueva persona</button>} />
         ) : (
           <div className="scroll-x">
-            <table className="tabla">
+            {!lista.length && <p className="muted" style={{ margin: '8px 0' }}>{vista === 'suspendidos' ? 'No hay personas suspendidas.' : 'No hay resultados.'}</p>}
+            <table className="tabla" hidden={!lista.length}>
               <thead><tr><th>Nombre</th><th className="num">Edad</th><th>Modalidad</th><th>Última consulta</th><th>Próximo turno</th></tr></thead>
               <tbody>
                 {lista.map(({ p, ultima, proximo }) => (

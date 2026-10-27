@@ -6,7 +6,7 @@ export interface Base {
   id: ID;
   creado_en?: string;
   actualizado_en?: string;
-  /** Baja lógica: la historia clínica no se borra, se archiva (Ley 26.529). */
+  /** Compatibilidad con filas archivadas en versiones anteriores: se ocultan. */
   eliminado_en?: string | null;
 }
 
@@ -26,7 +26,12 @@ export interface Antecedentes {
   historia_dietas?: string; // dietas previas y cómo terminaron
 }
 
+export type EstadoPaciente = 'activo' | 'suspendido';
+
 export interface Paciente extends Base {
+  /** Suspendida: deja de aparecer en la lista y la agenda, pero conserva toda su historia clínica. */
+  estado?: EstadoPaciente;
+  suspendido_en?: string;
   nombre: string;
   apellido: string;
   dni?: string;

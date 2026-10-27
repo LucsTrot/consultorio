@@ -48,7 +48,9 @@ Si falta la variable, el workflow se corta a propósito: así nunca se publica e
 - 5 intentos fallidos bloquean el ingreso 15 minutos.
 - En el dispositivo solo queda el token de sesión. Los datos clínicos viven en memoria mientras la app está abierta.
 - Los PDF de laboratorio van a la carpeta privada y los entrega el script solo con sesión válida; nunca hay links públicos.
-- Nada se borra: archivar marca `eliminado_en` en la fila (Ley 26.529).
+- **Suspender** a una persona la saca de la lista y de la agenda (cancela sus turnos futuros) sin tocar su historia clínica. Se reactiva cuando vuelve.
+- **Borrar** es definitivo y siempre pide confirmación en una ventana. Borrar una persona exige escribir su apellido y se lleva toda su historia clínica; los informes adjuntos van a la papelera de Drive (se vacía sola a los 30 días). La Ley 26.529 pide conservar la historia clínica al menos 10 años: para abandonos, lo indicado es suspender.
+- Mientras se guarda, el panel queda bloqueado hasta cerrarse: un doble clic no duplica registros.
 - Recomendado: verificación en dos pasos en la cuenta de Google de Sol.
 
 ### Sincronización

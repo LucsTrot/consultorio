@@ -1,9 +1,16 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { categoriaIMC, type Clasificacion } from '../lib/referencias';
+import { Icono } from './Icono';
 
-export function Panel({ titulo, eyebrow, onClose, children }: { titulo: string; eyebrow?: string; onClose: () => void; children: ReactNode }) {
+/**
+ * Panel lateral de carga. Con `ocupado`, queda bloqueado (cursor de espera, sin clics,
+ * sin Escape ni cerrar) hasta que termina el guardado y se cierra.
+ */
+export function Panel({ titulo, eyebrow, onClose, ocupado = false, children }: { titulo: string; eyebrow?: string; onClose: () => void; ocupado?: boolean; children: ReactNode }) {
+  const ocupadoRef = useRef(ocupado);
+  ocupadoRef.current = ocupado;
   useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && !ocupadoRef.current && onClose();
     window.addEventListener('keydown', k);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -12,18 +19,48 @@ export function Panel({ titulo, eyebrow, onClose, children }: { titulo: string; 
     };
   }, [onClose]);
   return (
-    <div className="velo" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="panel" role="dialog" aria-modal="true" aria-label={titulo}>
+    <div className="velo" onMouseDown={(e) => e.target === e.currentTarget && !ocupado && onClose()}>
+      <div className={`panel ${ocupado ? 'ocupado' : ''}`} role="dialog" aria-modal="true" aria-label={titulo} aria-busy={ocupado}>
         <div className="panel-cab">
           <div>
             {eyebrow && <span className="eyebrow">{eyebrow}</span>}
             <h2 style={{ marginTop: 6 }}>{titulo}</h2>
           </div>
-          <button className="btn fantasma" onClick={onClose} aria-label="Cerrar">Cerrar</button>
+          <button className="btn fantasma" onClick={onClose} aria-label="Cerrar" disabled={ocupado}>Cerrar</button>
         </div>
-        {children}
+        <fieldset className="panel-cuerpo" disabled={ocupado}>{children}</fieldset>
+        {ocupado && <div className="panel-bloqueo" aria-live="polite"><span>Guardando…</span></div>}
       </div>
     </div>
+  );
+}
+
+/**
+ * Evita guardados duplicados: el primer clic bloquea; los siguientes se ignoran hasta que termina.
+ * Si falla, se libera para reintentar y el error sube al aviso global.
+ */
+export function useGuardar() {
+  const [ocupado, setOcupado] = useState(false);
+  const enCurso = useRef(false);
+  const correr = useCallback(async (fn: () => Promise<unknown>) => {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setOcupado(true);
+    try {
+      await fn();
+    } finally {
+      enCurso.current = false;
+      setOcupado(false);
+    }
+  }, []);
+  return { ocupado, correr };
+}
+
+export function BotonBorrar({ onClick, children = 'Borrar', chico = false }: { onClick: () => void; children?: ReactNode; chico?: boolean }) {
+  return (
+    <button type="button" className={`btn borrar ${chico ? 'chico' : ''}`} onClick={onClick}>
+      <Icono nombre="borrar" tamano={chico ? 16 : 18} />{children}
+    </button>
   );
 }
 
@@ -82,19 +119,6 @@ export function Cabecera({ eyebrow, titulo, children }: { eyebrow?: string; titu
       </div>
       {children && <div className="fila">{children}</div>}
     </div>
-  );
-}
-
-/** Botón con confirmación en dos pasos dentro de la página (sin diálogos del navegador). */
-export function BotonConfirmar({ children, pregunta, onConfirm, className = 'btn fantasma' }: { children: ReactNode; pregunta: string; onConfirm: () => void; className?: string }) {
-  const [paso, setPaso] = useState(false);
-  if (!paso) return <button type="button" className={className} onClick={() => setPaso(true)}>{children}</button>;
-  return (
-    <span className="fila" role="group" aria-label={pregunta}>
-      <span className="small">{pregunta}</span>
-      <button type="button" className="btn chico" style={{ background: 'var(--alerta)', borderColor: 'var(--alerta)' }} onClick={() => { setPaso(false); onConfirm(); }}>Sí</button>
-      <button type="button" className="btn sec chico" onClick={() => setPaso(false)}>No</button>
-    </span>
   );
 }
 
